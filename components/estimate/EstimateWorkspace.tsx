@@ -5,6 +5,7 @@ import { AlertIcon, ArrowRightIcon, RefreshIcon, SparkIcon } from "@/components/
 import { InventorySummary, InventoryView } from "@/components/inventory/InventoryView";
 import { QuoteCard } from "@/components/inventory/QuoteCard";
 import { SamplePhoto } from "@/components/SamplePhoto";
+import { RequestVisitForm } from "@/components/jobs/RequestVisitForm";
 import { preparePhoto, type PreparedPhoto } from "@/lib/client/preparePhoto";
 import { SAMPLE_PHOTOS } from "@/lib/demo";
 import { ERROR_MESSAGES, isErrorCode } from "@/lib/errors";
@@ -389,6 +390,12 @@ export function EstimateWorkspace() {
                   <div className="h-64 animate-pulse rounded-[var(--radius-card)] border border-line bg-sunken" aria-label="Calculating estimate" />
                 )}
               </div>
+            </div>
+          )}
+
+          {result.items.length > 0 && quote.state === "ok" && (
+            <div className="mt-8">
+              <RequestVisitForm items={result.items} source={result.source} />
             </div>
           )}
         </section>

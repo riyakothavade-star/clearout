@@ -4,7 +4,7 @@
 
 ClearOut is a proposed managed clear-out service for retired office electronics at IT and technology companies in Bengaluru (roughly 50–500 employees). A company uploads photos of its storeroom. ClearOut returns an itemised inventory, flags anything that may store data or contains a battery, and shows an estimated payout. The proposed service then handles the physical inspection, data wiping, payment and documentation, and ClearOut manages the resale and recycling relationships itself. It is not a marketplace: customers never search for recyclers.
 
-This repository is the hackathon prototype. **The photo-to-estimate tool works today.** Inspection, wiping, collection, payment and documentation are proposed service steps and are not built.
+This repository is the hackathon prototype. **The whole journey works in software:** photo estimate → visit request with a private tracking link → team console for scheduling, on-site item confirmation, per-device wipe evidence, payment record and closure → printable closure pack. Physical visits and real payments are not offered yet: payments are recorded, never transferred.
 
 **Target customer:** a facilities, procurement or IT operations manager at a mid-sized tech company in Bengaluru.
 
@@ -26,8 +26,12 @@ This repository is the hackathon prototype. **The photo-to-estimate tool works t
 | Clear errors and recovery for outages, timeouts, quota, bad AI answers and quote failures | Done |
 | Phone, tablet and desktop layouts (cards on phones, table on wider screens) | Done |
 | Optional n8n quote workflow | Written and tested against the app's rules; **not connected** to a live n8n account |
+| **Visit request** after an estimate (company, contact, address, preferred date, consent) | Done |
+| **Private tracking page** `/jobs/CO-XXXXXX?t=…`: live status timeline, visit, wipe progress, payment, closure pack link | Done |
+| **Team console** `/ops` (passcode): job list, schedule visit, confirm/edit items on site (quote recalculated), one wipe record per data-bearing unit, **payment locked until every unit has evidence**, record payment (simulated), close, cancel | Done |
+| **Closure pack** `/jobs/CO-XXXXXX/closure?t=…`: items, every device with serial/outcome/method/evidence, payment, history; print or save as PDF | Done (prototype document, not a legal certificate) |
 
-**Planned, not built:** booking an inspection, the on-site wipe workflow, payments, closure documents, accounts and notifications.
+**Planned, not built:** real payments, email/WhatsApp notifications, customer accounts, technician scheduling across multiple staff, and a legally certified certificate of destruction.
 
 ## The three acceptance tests
 
@@ -88,6 +92,22 @@ DEMO.md                    Hackathon demo script and troubleshooting
 
 ---
 
+## The service workflow (jobs)
+
+Each visit request becomes a **job** with a reference like `CO-7KX3PQ` and a random 32-character token. The customer's private link is `/jobs/<ref>?t=<token>`; without the token, the job looks like it doesn't exist. Every step is enforced on the server (`lib/jobs/model.ts`):
+
+```
+requested → scheduled → inspected → wiped → paid → closed        (cancel allowed before paid)
+```
+
+- **Scheduling.** The visit is scheduled with a date, time slot and technician.
+- **Inspection.** Confirming the items recalculates the quote with the same price engine and creates one wipe record per unit that stores data or might.
+- **Wipe gate.** The wipe step can only complete when every unit has a serial number, an outcome (wiped, destroyed or no storage found), a method, evidence and a technician. Payment can't be recorded before that.
+- **Payment.** It's stored as **simulated**; no money moves.
+- **Conflicts.** Each save carries the revision number the team member saw, so two people can't overwrite each other.
+- **The team console** (`/ops`) uses `OPS_PASSCODE`. Signing in sets an HTTP-only, SameSite=Strict cookie holding an HMAC of the passcode, never the passcode itself. Login attempts are rate-limited.
+- **Storage** (`lib/jobs/store.ts`) is one private JSON document per job in Vercel Blob, or files in `.data/jobs` locally.
+
 ## Pricing assumptions and limitations
 
 All values live in `data/prices.json` and are checked when the app starts. A broken file stops the app instead of producing wrong quotes.
@@ -124,6 +144,8 @@ Then edit `.env.local`:
 | `GEMINI_MODEL` | Optional | Override the Gemini model (default `gemini-flash-latest`). |
 | `DEMO_MODE` | Recommended for the pitch | `true` shows the clearly labelled sample clear-out. |
 | `N8N_QUOTE_URL`, `N8N_SECRET` | Optional | n8n webhook and shared secret. Leave empty to use the built-in rules. |
+| `OPS_PASSCODE` | For the team console | At least 8 characters. Without it, `/ops` says the console isn't set up. |
+| `BLOB_READ_WRITE_TOKEN` | On Vercel only | Added automatically when a **private** Vercel Blob store is connected to the project. Locally, jobs are saved in `.data/jobs` (git-ignored). On Vercel without it, saving a request shows a clear "storage isn't set up" message. |
 
 Only the key for the chosen provider is needed. Without any key, the app still runs: the page says photo analysis isn't set up, and the sample clear-out still works if `DEMO_MODE=true`.
 
@@ -167,7 +189,8 @@ See **[DEMO.md](DEMO.md)** for the pitch script and troubleshooting.
 
 The Vercel project **`clearout-lcea`** (https://clearout-lcea.vercel.app) is connected to this GitHub repository's `main` branch, so **every push to `main` deploys automatically.** Two older projects created from the command line (`clearout` at clearout-rouge.vercel.app, and `clearout-cvhd`) run copies of the code and are not connected to GitHub; they can be deleted from the Vercel dashboard to avoid confusion.
 
-1. In Vercel, open **clearout-lcea → Settings → Environment Variables**. For **Production**, add `AI_PROVIDER`, the matching key (`GEMINI_API_KEY` or `ANTHROPIC_API_KEY`) and `DEMO_MODE=true`. Add the n8n values only if you use n8n.
+1. In Vercel, open **clearout-lcea → Settings → Environment Variables**. For **Production**, add `AI_PROVIDER`, the matching key (`GEMINI_API_KEY` or `ANTHROPIC_API_KEY`), `DEMO_MODE=true` and `OPS_PASSCODE`. Add the n8n values only if you use n8n.
+1b. In **clearout-lcea → Storage**, create a **Blob** store with **private** access and connect it to the project. This adds `BLOB_READ_WRITE_TOKEN`, which is needed to save visit requests.
 2. Environment changes only apply to new deployments: open **Deployments → ⋯ → Redeploy**, or push a commit.
 3. To verify, open the site, then `/estimate`, and click "View the sample clear-out". Then try one real photo. `https://clearout-lcea.vercel.app/api/status` should show `{"analysisConfigured":true,"demoEnabled":true}`.
 4. **If a deployment fails,** open the failed deployment's build log in Vercel. Run `npm run build` locally to reproduce the error. To roll back, choose an earlier deployment and **Promote to Production**.
@@ -182,7 +205,8 @@ The Vercel project **`clearout-lcea`** (https://clearout-lcea.vercel.app) is con
 - An n8n answer is used only if it has the right shape and matches the canonical calculation exactly.
 - Security headers (no framing, no MIME sniffing, a strict referrer policy, camera/microphone/location blocked, HSTS, a limited CSP).
 - **Rate limit:** 6 analyses and 60 quotes per minute per visitor IP. It's in-memory, so on Vercel it is per server instance and best-effort, not strict.
-- Uploaded photos are not stored.
+- Uploaded photos are not stored. Visit requests store the contact details the customer enters, in a private Blob store, readable only by the server.
+- Job pages and the console carry `noindex`, and job API responses are `no-store`.
 - These are baseline protections for a prototype, not a full security review.
 
 ## Troubleshooting
@@ -194,6 +218,9 @@ The Vercel project **`clearout-lcea`** (https://clearout-lcea.vercel.app) is con
 | "usage limit is used up" | The free Gemini key's daily limit (20 requests) is spent. Wait for it to reset, use a paid key, or switch to Claude. |
 | No "View the sample clear-out" button | Set `DEMO_MODE=true` and restart (or redeploy). |
 | iPhone photos rejected | Export as JPEG, or set Camera → Formats → Most Compatible. |
+| "Requests can't be saved on this site yet" | Connect a private Vercel Blob store to the project (adds `BLOB_READ_WRITE_TOKEN`), then redeploy. |
+| "The ClearOut team console isn't set up" | Add `OPS_PASSCODE` (8+ characters) and redeploy. |
+| "Photo analysis isn't available right now (… rejected our credentials)" | The AI key on that deployment is wrong. Re-add it from `.env.local` (see Deploying) and redeploy. |
 | Preview/dev server can't find Node | Run `source ~/.zprofile` in that terminal, or open a new Terminal window. |
 
 ## Known limitations
@@ -203,4 +230,6 @@ The Vercel project **`clearout-lcea`** (https://clearout-lcea.vercel.app) is con
 - **Prices are placeholders.**
 - **The rate limit is best-effort.**
 - **n8n isn't connected.**
+- **No notifications:** customers must keep their private link; no email or WhatsApp is sent.
+- **Job storage is a simple document store:** fine for a pilot, not for high volume.
 - **AI results are estimates:** it can misread model names or miss items, so the UI tells users to check every item.

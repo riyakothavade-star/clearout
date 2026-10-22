@@ -39,11 +39,11 @@ const PAINS = [
 ];
 
 const STEPS = [
-  { title: "Upload photos", text: "Send 1–5 photos of the pile from your phone or laptop.", live: true },
-  { title: "Review the inventory and estimate", text: "AI lists what it can see and flags data and batteries; fixed rules estimate the payout.", live: true },
-  { title: "Physical inspection", text: "A ClearOut team member confirms every item on site.", live: false },
-  { title: "Data wiping and collection", text: "Devices that can hold data are wiped or destroyed, then the lot is collected.", live: false },
-  { title: "Payment and documentation", text: "The company is paid and receives the agreed closure documents.", live: false },
+  { title: "Upload photos", text: "Send 1–5 photos of the pile from your phone or laptop.", live: "AI-assisted" },
+  { title: "Review the inventory and estimate", text: "AI lists what it can see and flags data and batteries; fixed rules estimate the payout.", live: "Automatic" },
+  { title: "Book an inspection visit", text: "Request a visit and follow every step through a private tracking link.", live: "Request and tracking" },
+  { title: "Data wiping and collection", text: "Technicians confirm each item and record wipe or destruction evidence for every data-bearing unit.", live: "Recorded by the team" },
+  { title: "Payment and documentation", text: "The payout is recorded and a closure pack lists every device and its evidence.", live: "Payment simulated" },
 ];
 
 const HANDLED = [
@@ -170,24 +170,19 @@ export default function Home() {
           <SectionHeading eyebrow="How it works" title="From photos to a planned clear-out." />
           <div className="mt-6 flex flex-wrap gap-3 text-sm">
             <span className="inline-flex items-center gap-2 rounded-full bg-forest-900 px-3 py-1 font-medium text-white">
-              <span className="h-2 w-2 rounded-full bg-lime-300" aria-hidden="true" /> Works in this prototype today
+              <span className="h-2 w-2 rounded-full bg-lime-300" aria-hidden="true" /> Every step can be demonstrated in this prototype
             </span>
             <span className="inline-flex items-center gap-2 rounded-full border border-line-strong px-3 py-1 font-medium text-muted">
-              <span className="h-2 w-2 rounded-full border border-muted" aria-hidden="true" /> Proposed service step, not yet offered
+              Physical visits, wiping and payments are not yet offered as a live service
             </span>
           </div>
           <ol className="mt-10 grid gap-4 md:grid-cols-5">
             {STEPS.map((step, i) => (
-              <li
-                key={step.title}
-                className={`relative rounded-[var(--radius-card)] border p-5 ${step.live ? "border-forest-800 bg-forest-900 text-white" : "border-dashed border-line-strong bg-surface"}`}
-              >
-                <span className={`text-sm font-semibold ${step.live ? "text-lime-300" : "text-muted"}`}>Step {i + 1}</span>
-                <h3 className={`mt-2 font-semibold ${step.live ? "text-white" : "text-ink"}`}>{step.title}</h3>
-                <p className={`mt-2 text-sm leading-relaxed ${step.live ? "text-forest-100" : "text-muted"}`}>{step.text}</p>
-                <p className={`mt-4 text-xs font-semibold ${step.live ? "text-lime-200" : "text-muted"}`}>
-                  {step.live ? "Available now" : "Proposed"}
-                </p>
+              <li key={step.title} className={`relative rounded-[var(--radius-card)] border p-5 ${i < 2 ? "border-forest-800 bg-forest-900 text-white" : "border-line bg-surface"}`}>
+                <span className={`text-sm font-semibold ${i < 2 ? "text-lime-300" : "text-forest-700"}`}>Step {i + 1}</span>
+                <h3 className={`mt-2 font-semibold ${i < 2 ? "text-white" : "text-ink"}`}>{step.title}</h3>
+                <p className={`mt-2 text-sm leading-relaxed ${i < 2 ? "text-forest-100" : "text-muted"}`}>{step.text}</p>
+                <p className={`mt-4 text-xs font-semibold ${i < 2 ? "text-lime-200" : "text-forest-700"}`}>{step.live}</p>
               </li>
             ))}
           </ol>
@@ -253,7 +248,7 @@ export default function Home() {
                 { icon: DataIcon, title: "Flagged from the start", text: "Anything that stores data, or might, is flagged in red with a label, not colour alone." },
                 { icon: AlertIcon, title: "Uncertainty shown first", text: "Items the AI isn't sure about are listed first and marked for human review." },
                 { icon: SearchIcon, title: "Photos are not proof", text: "Flags come from photos only. The proposed service checks every device physically." },
-                { icon: ShieldIcon, title: "Device-level evidence (proposed)", text: "The planned service intends to record wiping evidence per device and provide documentation." },
+                { icon: ShieldIcon, title: "Device-level evidence", text: "Each data-bearing unit gets its own wipe or destruction record, and payment stays locked until every one is recorded." },
               ].map(({ icon: Icon, title, text }) => (
                 <li key={title} className="rounded-[var(--radius-card)] border border-white/10 bg-white/5 p-5">
                   <Icon className="h-6 w-6 text-lime-300" />
@@ -263,7 +258,7 @@ export default function Home() {
               ))}
             </ul>
             <p className="text-sm text-forest-100/80 lg:col-span-2">
-              This prototype does not wipe devices, verify a wipe or issue certificates. It does not store uploaded photos.
+              The prototype records the evidence technicians enter for each device; it does not wipe devices itself, and its closure pack is not a legally certified certificate. Uploaded photos are never stored.
             </p>
           </div>
         </section>

@@ -18,13 +18,13 @@ export function SiteFooter() {
             <li><Link className="hover:text-white" href="/#what-we-handle">What we handle</Link></li>
             <li><Link className="hover:text-white" href="/#data-security">Data security</Link></li>
             <li><Link className="hover:text-white" href="/estimate">Get an estimate</Link></li>
+            <li><Link className="hover:text-white" href="/ops">Team console</Link></li>
           </ul>
         </nav>
         <div className="text-sm">
           <p className="font-semibold text-white">Status</p>
           <p className="mt-3 leading-relaxed text-forest-100/80">
-            Hackathon prototype. The photo-to-estimate tool works today; inspections, data wiping, payment and
-            documentation are proposed service steps, not yet offered. Prices are illustrative, not verified market rates.
+            Hackathon prototype. The full journey (estimate, visit request, inspection, wipe records, payment record and closure pack) works in software; physical visits and real payments are not yet offered. Prices are illustrative, not verified market rates.
           </p>
         </div>
       </div>

@@ -16,6 +16,13 @@ export const ERROR_MESSAGES = {
   INVALID_AI_RESPONSE: "We couldn't read the analysis result. Please try again.",
   QUOTE_FAILED: "We couldn't calculate your estimate.",
   DEMO_DISABLED: "The sample clear-out isn't enabled on this site.",
+  INVALID_DETAILS: "Some details are missing or invalid. Please check the highlighted fields.",
+  STORAGE_NOT_CONFIGURED: "Requests can't be saved on this site yet (storage isn't set up).",
+  JOB_NOT_FOUND: "We couldn't find that clear-out. Check the link and try again.",
+  INVALID_STEP: "That step isn't available yet for this clear-out.",
+  CONFLICT: "This clear-out was just updated by someone else. Reload to see the latest version.",
+  UNAUTHORIZED: "Please sign in to the ClearOut team console.",
+  OPS_DISABLED: "The ClearOut team console isn't set up on this site (no passcode configured).",
   INTERNAL: "Something went wrong on our side. Please try again.",
 } as const;
 
@@ -36,6 +43,13 @@ const STATUS: Record<ErrorCode, number> = {
   INVALID_AI_RESPONSE: 502,
   QUOTE_FAILED: 502,
   DEMO_DISABLED: 404,
+  INVALID_DETAILS: 400,
+  STORAGE_NOT_CONFIGURED: 503,
+  JOB_NOT_FOUND: 404,
+  INVALID_STEP: 409,
+  CONFLICT: 409,
+  UNAUTHORIZED: 401,
+  OPS_DISABLED: 503,
   INTERNAL: 500,
 };
 
@@ -50,7 +64,7 @@ export class AppError extends Error {
   }
 }
 
-export function errorResponse(code: ErrorCode, extra?: Record<string, string>): Response {
+export function errorResponse(code: ErrorCode, extra?: { fields?: string[] }): Response {
   return Response.json({ error: { code, message: ERROR_MESSAGES[code], ...extra } }, { status: STATUS[code] });
 }
 
