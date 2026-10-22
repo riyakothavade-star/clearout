@@ -1,8 +1,8 @@
-import prices from "@/data/prices.json";
+import { PRICES } from "@/lib/prices";
 
-const categoryList = prices.categories.map((c) => `- ${c.id}: ${c.name}`).join("\n");
+const categoryList = PRICES.categories.map((c) => `- ${c.id}: ${c.name}`).join("\n");
 
-// The instruction sent to Claude along with the photos.
+// The instruction sent to the AI provider along with the photos.
 export const LISTING_PROMPT = `These are photos of a storeroom of retired office electronics. The photos are numbered.
 
 List every item you can see. For each item give:

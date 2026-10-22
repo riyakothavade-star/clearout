@@ -12,16 +12,22 @@
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0]
+      "position": [
+        0,
+        0
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// Same rules as lib/quote.ts in the app.\nconst { items, prices } = $input.first().json.body;\nconst share = prices.buybackPercent / 100;\nconst lines = items.map((item, index) => {\n  const category = prices.categories.find((c) => c.id === item.priceCategoryId);\n  if (!category) {\n    return { index, type: item.type, quantity: item.quantity, condition: item.condition, categoryName: 'No matching category', pricedOnSite: true, low: 0, high: 0 };\n  }\n  const factor = prices.conditionMultiplier[item.condition] * share * item.quantity;\n  return { index, type: item.type, quantity: item.quantity, condition: item.condition, categoryName: category.name, pricedOnSite: false, low: Math.round(category.resaleLow * factor), high: Math.round(category.resaleHigh * factor) };\n});\nconst sumLow = lines.reduce((s, l) => s + l.low, 0);\nconst sumHigh = lines.reduce((s, l) => s + l.high, 0);\nreturn [{ json: {\n  lines,\n  buybackPercent: prices.buybackPercent,\n  fee: prices.feeRupees,\n  totalLow: Math.max(0, sumLow - prices.feeRupees),\n  totalHigh: Math.max(0, sumHigh - prices.feeRupees),\n  pricedOnSiteCount: lines.filter((l) => l.pricedOnSite).length,\n} }];"
+        "jsCode": "// Same rules as lib/quote.ts in the app (a unit test checks they give identical results).\nconst { items, prices } = $input.first().json.body;\nconst pct = (m) => Math.round(m * 100);\nconst buyback = prices.buybackPercent;\nconst lines = items.map((item, index) => {\n  const category = prices.categories.find((c) => c.id === item.priceCategoryId);\n  const base = { index, type: item.type, quantity: item.quantity, condition: item.condition };\n  if (!category) {\n    return { ...base, categoryId: 'none', categoryName: 'No matching category', pricedOnSite: true, disposalCost: false, low: 0, high: 0 };\n  }\n  const condition = pct(prices.conditionMultiplier[item.condition]);\n  const value = (rupees) => rupees < 0 ? rupees * item.quantity : Math.round((rupees * condition * buyback * item.quantity) / 10000);\n  return {\n    ...base,\n    categoryId: category.id,\n    categoryName: category.name,\n    pricedOnSite: false,\n    disposalCost: category.resaleLow < 0,\n    low: Math.min(value(category.resaleLow), value(category.resaleHigh)),\n    high: Math.max(value(category.resaleLow), value(category.resaleHigh)),\n  };\n});\nconst subtotalLow = lines.reduce((s, l) => s + l.low, 0);\nconst subtotalHigh = lines.reduce((s, l) => s + l.high, 0);\nreturn [{ json: {\n  lines,\n  buybackPercent: buyback,\n  fee: prices.feeRupees,\n  subtotalLow,\n  subtotalHigh,\n  netLow: subtotalLow - prices.feeRupees,\n  netHigh: subtotalHigh - prices.feeRupees,\n  pricedOnSiteCount: lines.filter((l) => l.pricedOnSite).length,\n} }];"
       },
       "name": "Compute quote",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 0]
+      "position": [
+        240,
+        0
+      ]
     },
     {
       "parameters": {
@@ -32,12 +38,35 @@
       "name": "Respond",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [480, 0]
+      "position": [
+        480,
+        0
+      ]
     }
   ],
   "connections": {
-    "Webhook": { "main": [[{ "node": "Compute quote", "type": "main", "index": 0 }]] },
-    "Compute quote": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Compute quote",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute quote": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "settings": {}
 }

@@ -1,53 +1,43 @@
-import { readPhotosWithClaude } from "@/lib/ai/claude";
-import { readPhotosWithGemini } from "@/lib/ai/gemini";
-import prices from "@/data/prices.json";
+import { analysePhotos } from "@/lib/ai/provider";
+import { AppError, errorResponse } from "@/lib/errors";
+import { logEvent } from "@/lib/log";
+import { MAX_BODY_BYTES, validatePhotos } from "@/lib/photos";
+import { allowRequest, clientIp } from "@/lib/rateLimit";
 
 export const maxDuration = 60;
 
-const TRY_AGAIN = "Something went wrong reading your photos. Please try again.";
+const LISTING_REQUESTS_PER_MINUTE = 6;
 
-// Which AI reads the photos: AI_PROVIDER=gemini (default while testing) or AI_PROVIDER=claude.
-const PROVIDERS = {
-  gemini: { keyName: "GEMINI_API_KEY", label: "Gemini", read: readPhotosWithGemini },
-  claude: { keyName: "ANTHROPIC_API_KEY", label: "Claude", read: readPhotosWithClaude },
-};
-
-// POST { photos: string[] } (base64 JPEGs) -> { items, noElectronicsReason } or { error }
+// POST { photos: string[] } (base64 JPEGs) -> { source: "ai", items, noElectronicsReason }
+// Errors -> { error: { code, message } } with a plain message; details go to the server log only.
 export async function POST(request: Request) {
-  const provider = process.env.AI_PROVIDER === "claude" ? PROVIDERS.claude : PROVIDERS.gemini;
-  const key = process.env[provider.keyName];
-  if (!key || key === "paste-your-key-here") {
-    return Response.json(
-      { error: `The ${provider.label} API key isn't set yet. Paste it into .env.local, then restart the app.` },
-      { status: 500 },
-    );
-  }
-
-  const body = await request.json().catch(() => null);
-  const photos: unknown = body?.photos;
-  if (!Array.isArray(photos) || photos.length < 1 || photos.length > 5) {
-    return Response.json({ error: "Add 1–5 photos of the pile." }, { status: 400 });
-  }
-
+  const started = Date.now();
   try {
-    const listing = await provider.read(photos.map(String), key);
+    const length = Number(request.headers.get("content-length") ?? 0);
+    if (length > MAX_BODY_BYTES) throw new AppError("PAYLOAD_TOO_LARGE", `content-length ${length}`);
 
-    // Never trust a category id we don't have: unknown ids become "none" ("priced on site").
-    const knownIds = new Set(prices.categories.map((c) => c.id));
-    const items = listing.items.map((item) =>
-      knownIds.has(item.priceCategoryId) ? item : { ...item, priceCategoryId: "none" },
-    );
+    if (!allowRequest(`listing:${clientIp(request)}`, LISTING_REQUESTS_PER_MINUTE)) throw new AppError("RATE_LIMITED");
 
-    return Response.json({ items, noElectronicsReason: listing.noElectronicsReason });
-  } catch (error) {
-    console.error(`${provider.label} listing failed:`, error);
-    // 429 = the API key's usage limit is used up. Retrying won't help, so say so plainly.
-    if ((error as { status?: number }).status === 429) {
-      return Response.json(
-        { error: `The ${provider.label} API's usage limit is used up for now. Please try again later.` },
-        { status: 429 },
-      );
+    const text = await request.text();
+    if (text.length > MAX_BODY_BYTES) throw new AppError("PAYLOAD_TOO_LARGE", `body ${text.length}`);
+    let body: unknown;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      throw new AppError("INVALID_REQUEST", "body is not JSON");
     }
-    return Response.json({ error: TRY_AGAIN }, { status: 502 });
+    const photos = validatePhotos((body as { photos?: unknown } | null)?.photos);
+
+    const { listing, provider } = await analysePhotos(photos);
+    logEvent("info", "listing.ok", { provider, photos: photos.length, items: listing.items.length, ms: Date.now() - started });
+    return Response.json({ source: "ai", ...listing });
+  } catch (error) {
+    const appError = error instanceof AppError ? error : new AppError("INTERNAL", error instanceof Error ? error.name : "unknown");
+    logEvent(appError.code === "INTERNAL" ? "error" : "warn", "listing.failed", {
+      code: appError.code,
+      detail: appError.detail,
+      ms: Date.now() - started,
+    });
+    return errorResponse(appError.code);
   }
 }

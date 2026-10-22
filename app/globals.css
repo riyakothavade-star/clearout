@@ -1,10 +1,80 @@
 @import "tailwindcss";
 
+/* ClearOut design tokens. Use these instead of raw colours so the product stays consistent. */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --color-canvas: #f6f4ee; /* warm off-white page background */
+  --color-surface: #ffffff;
+  --color-sunken: #efece4;
+  --color-line: #e0ddd3;
+  --color-line-strong: #cbc7bb;
+  --color-ink: #15211b; /* primary text */
+  --color-muted: #55615a; /* secondary text, AA on canvas */
+
+  --color-forest-950: #0c2219;
+  --color-forest-900: #12301f;
+  --color-forest-800: #1a4430;
+  --color-forest-700: #245a40;
+  --color-forest-100: #dfeae2;
+  --color-forest-50: #eef4ef;
+
+  --color-lime-300: #c8ec7d; /* restrained accent, on dark backgrounds only */
+  --color-lime-200: #dcf3a8;
+
+  --color-attention-50: #fff6e5; /* amber: needs checking */
+  --color-attention-200: #f6d9a0;
+  --color-attention-800: #7a4a00;
+
+  --color-danger-50: #fdeeec; /* red: data-security warning */
+  --color-danger-200: #f3c3bc;
+  --color-danger-700: #a3261a;
+
+  --color-success-50: #ebf5ee; /* green: positive states */
+  --color-success-700: #1f6b3d;
+
+  --radius-card: 14px;
+  --radius-control: 10px;
+  --shadow-card: 0 1px 2px rgb(21 33 27 / 0.05), 0 4px 16px -6px rgb(21 33 27 / 0.08);
+  --shadow-raised: 0 2px 4px rgb(21 33 27 / 0.06), 0 18px 40px -16px rgb(21 33 27 / 0.22);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible keyboard focus everywhere. */
+:focus-visible {
+  outline: 2px solid var(--color-forest-700);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.on-dark :focus-visible {
+  outline-color: var(--color-lime-300);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Anchored sections stop below the sticky header. */
+section[id] {
+  scroll-margin-top: 88px;
 }

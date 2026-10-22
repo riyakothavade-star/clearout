@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ClearOut",
-  description: "Photos of your storeroom in, payout quote out.",
+  title: "ClearOut · Retired office tech, one clear way out",
+  description: "A proposed managed clear-out service for retired office electronics in Bengaluru: upload photos, get an itemised inventory and an estimated payout.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900">{children}</body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

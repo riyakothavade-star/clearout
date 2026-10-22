@@ -43,3 +43,7 @@ next-env.d.ts
 # ClearOut: never commit secrets; the example file (no values) is safe to commit
 .env.local
 !.env.example
+
+# Playwright
+/test-results/
+/playwright-report/
