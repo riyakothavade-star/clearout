@@ -1,0 +1,43 @@
+{
+  "name": "ClearOut quote",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "clearout-quote",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Same rules as lib/quote.ts in the app.\nconst { items, prices } = $input.first().json.body;\nconst share = prices.buybackPercent / 100;\nconst lines = items.map((item, index) => {\n  const category = prices.categories.find((c) => c.id === item.priceCategoryId);\n  if (!category) {\n    return { index, type: item.type, quantity: item.quantity, condition: item.condition, categoryName: 'No matching category', pricedOnSite: true, low: 0, high: 0 };\n  }\n  const factor = prices.conditionMultiplier[item.condition] * share * item.quantity;\n  return { index, type: item.type, quantity: item.quantity, condition: item.condition, categoryName: category.name, pricedOnSite: false, low: Math.round(category.resaleLow * factor), high: Math.round(category.resaleHigh * factor) };\n});\nconst sumLow = lines.reduce((s, l) => s + l.low, 0);\nconst sumHigh = lines.reduce((s, l) => s + l.high, 0);\nreturn [{ json: {\n  lines,\n  buybackPercent: prices.buybackPercent,\n  fee: prices.feeRupees,\n  totalLow: Math.max(0, sumLow - prices.feeRupees),\n  totalHigh: Math.max(0, sumHigh - prices.feeRupees),\n  pricedOnSiteCount: lines.filter((l) => l.pricedOnSite).length,\n} }];"
+      },
+      "name": "Compute quote",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 0]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Compute quote", "type": "main", "index": 0 }]] },
+    "Compute quote": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+  },
+  "settings": {}
+}

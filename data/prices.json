@@ -1,0 +1,26 @@
+{
+  "_note": "PLACEHOLDER PRICES - replace with real Bengaluru resale prices before the demo. resaleLow/resaleHigh are what ClearOut can resell one item for in GOOD condition, in rupees.",
+  "buybackPercent": 40,
+  "feeRupees": 1500,
+  "conditionMultiplier": { "good": 1, "fair": 0.7, "poor": 0.4, "scrap": 0.1 },
+  "categories": [
+    { "id": "laptop-recent", "name": "Laptop, under 4 years old", "resaleLow": 15000, "resaleHigh": 30000 },
+    { "id": "laptop-old", "name": "Laptop, 4+ years old", "resaleLow": 3000, "resaleHigh": 8000 },
+    { "id": "desktop", "name": "Desktop tower / mini PC", "resaleLow": 2000, "resaleHigh": 6000 },
+    { "id": "server", "name": "Rack or tower server", "resaleLow": 5000, "resaleHigh": 20000 },
+    { "id": "monitor-flat", "name": "Flat-panel monitor (LCD/LED)", "resaleLow": 1000, "resaleHigh": 3000 },
+    { "id": "monitor-crt", "name": "CRT monitor", "resaleLow": 0, "resaleHigh": 200 },
+    { "id": "hdd", "name": "Loose hard drive (HDD)", "resaleLow": 200, "resaleHigh": 600 },
+    { "id": "ssd", "name": "Loose SSD", "resaleLow": 400, "resaleHigh": 1200 },
+    { "id": "phone", "name": "Smartphone", "resaleLow": 1500, "resaleHigh": 6000 },
+    { "id": "tablet", "name": "Tablet", "resaleLow": 2000, "resaleHigh": 7000 },
+    { "id": "printer", "name": "Printer / copier", "resaleLow": 500, "resaleHigh": 2000 },
+    { "id": "network", "name": "Router / switch / firewall", "resaleLow": 300, "resaleHigh": 2000 },
+    { "id": "projector", "name": "Projector", "resaleLow": 1000, "resaleHigh": 4000 },
+    { "id": "ups-unit", "name": "UPS unit (with battery)", "resaleLow": 500, "resaleHigh": 2000 },
+    { "id": "battery-lead", "name": "Loose lead-acid UPS battery", "resaleLow": 300, "resaleHigh": 1200 },
+    { "id": "battery-li", "name": "Loose lithium battery / power bank", "resaleLow": 50, "resaleHigh": 300 },
+    { "id": "peripherals", "name": "Keyboard / mouse / webcam / headset", "resaleLow": 0, "resaleHigh": 150 },
+    { "id": "cables", "name": "Cables, chargers, adapters (per item)", "resaleLow": 0, "resaleHigh": 30 }
+  ]
+}
